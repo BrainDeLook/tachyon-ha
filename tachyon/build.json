@@ -1,0 +1,9 @@
+{
+  "build_from": {
+    "amd64": "ghcr.io/kimusan/tachyon:latest",
+    "aarch64": "ghcr.io/kimusan/tachyon:latest"
+  },
+  "args": {
+    "BUILD_UPSTREAM": "latest"
+  }
+}

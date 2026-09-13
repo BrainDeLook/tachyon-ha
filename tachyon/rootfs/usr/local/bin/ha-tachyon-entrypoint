@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+OPTIONS_FILE=/data/options.json
+
+json_value() {
+  key="$1"
+  default="$2"
+  if [ ! -f "$OPTIONS_FILE" ]; then
+    printf '%s' "$default"
+    return
+  fi
+  value=$(sed -n "s/.*\"${key}\"[[:space:]]*:[[:space:]]*\(true\|false\|\"[^\"]*\"\).*/\1/p" "$OPTIONS_FILE" | head -n 1)
+  value=${value:-$default}
+  value=${value#\"}
+  value=${value%\"}
+  printf '%s' "$value"
+}
+
+export DEBUG="$(json_value debug false)"
+export UPLOAD_MAX_SIZE="$(json_value upload_max_size 25M)"
+export MEMORY_LIMIT="$(json_value memory_limit 128M)"
+export SECURE_COOKIES="$(json_value secure_cookies true)"
+
+exec /entrypoint.sh

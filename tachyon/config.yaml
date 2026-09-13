@@ -1,0 +1,29 @@
+name: Tachyon
+version: "4.2.3"
+slug: tachyon
+description: Modern self-hosted webmail client for Home Assistant
+url: https://github.com/kimusan/Tachyon
+startup: services
+init: false
+arch:
+  - amd64
+  - aarch64
+ingress: true
+ingress_port: 8888
+panel_icon: mdi:email-fast
+panel_title: Tachyon
+webui: "[PROTO:http]://[HOST]:[PORT:8888]"
+ports:
+  8888/tcp: null
+ports_description:
+  8888/tcp: Optional direct HTTP access (Ingress is recommended)
+options:
+  debug: false
+  upload_max_size: 25M
+  memory_limit: 128M
+  secure_cookies: true
+schema:
+  debug: bool
+  upload_max_size: str
+  memory_limit: str
+  secure_cookies: bool
