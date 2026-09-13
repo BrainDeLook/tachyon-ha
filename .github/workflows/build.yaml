@@ -1,0 +1,49 @@
+name: Build add-on images
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "tachyon/**"
+      - ".github/workflows/build.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, aarch64]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build and publish add-on image
+        uses: home-assistant/builder/actions/build-image@2026.06.0
+        with:
+          arch: ${{ matrix.arch }}
+          context: ./tachyon
+          file: ./tachyon/Dockerfile
+          image: ghcr.io/braindelook/tachyon-ha-${{ matrix.arch }}
+          image-tags: |
+            4.2.5
+            latest
+          version: 4.2.5
+          push: "true"
+          cosign: "false"
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    name: Validate add-on metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: frenck/action-addon-linter@v2
+        with:
+          path: ./tachyon

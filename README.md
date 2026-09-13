@@ -13,7 +13,7 @@ Home Assistant add-on для [Tachyon](https://github.com/kimusan/Tachyon) — s
 
 ## Данные и обновления
 
-Данные Tachyon сохраняются в штатном persistent volume `/var/lib/tachyon` из официального образа и переживают перезапуск и обновление аддона. Настройки Home Assistant передаются через `/data/options.json`.
+Данные Tachyon сохраняются в штатном persistent volume `/var/lib/tachyon` из официального образа и переживают перезапуск и обновление аддона. Настройки Home Assistant передаются через `/data/options.json`. Для установки Home Assistant использует опубликованные multi-arch образы из GHCR.
 
 ## Лицензия
 

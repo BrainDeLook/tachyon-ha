@@ -3,6 +3,7 @@ version: "4.2.5"
 slug: tachyon
 description: Modern self-hosted webmail client for Home Assistant
 url: https://github.com/kimusan/Tachyon
+image: ghcr.io/braindelook/tachyon-ha-{arch}
 startup: services
 init: false
 arch:
@@ -17,6 +18,9 @@ ports:
   8888/tcp: null
 ports_description:
   8888/tcp: Optional direct HTTP access (Ingress is recommended)
+backup_exclude:
+  - "**/cache/"
+  - "**/log/"
 options:
   debug: false
   upload_max_size: 25M
