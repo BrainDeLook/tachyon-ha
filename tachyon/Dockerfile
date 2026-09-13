@@ -9,11 +9,6 @@ ARG BUILD_NAME
 ARG BUILD_REF
 ARG BUILD_REPOSITORY
 
-# Home Assistant mounts the add-on data directory at /data. Tachyon's
-# upstream image persists its state in /var/lib/tachyon, so point that path
-# at the add-on data volume.
-RUN rm -rf /var/lib/tachyon && ln -s /data /var/lib/tachyon
-
 COPY rootfs/ /
 RUN chmod 0755 /usr/local/bin/ha-tachyon-entrypoint
 

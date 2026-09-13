@@ -9,7 +9,7 @@ Tachyon — быстрый self-hosted web-клиент для IMAP/SMTP, кон
 - `memory_limit` — лимит памяти PHP (по умолчанию `128M`).
 - `secure_cookies` — флаг secure для cookie (по умолчанию `true`).
 
-Данные хранятся в постоянном каталоге аддона. Пароль панели администратора находится в `admin_password.txt` внутри данных Tachyon после первого запуска.
+Данные хранятся в постоянном volume `/var/lib/tachyon`, который объявлен upstream-образом Tachyon. Пароль панели администратора находится в `admin_password.txt` внутри данных Tachyon после первого запуска.
 
 ## Порт
 
