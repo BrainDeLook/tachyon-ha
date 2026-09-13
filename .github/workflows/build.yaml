@@ -15,15 +15,17 @@ permissions:
 jobs:
   build:
     name: Build ${{ matrix.image_arch }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - build_arch: amd64
             image_arch: amd64
-          - build_arch: arm64
+            runner: ubuntu-24.04
+          - build_arch: aarch64
             image_arch: aarch64
+            runner: ubuntu-24.04-arm
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -36,9 +38,9 @@ jobs:
           file: ./tachyon/Dockerfile
           image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.6
+            4.2.7
             latest
-          version: 4.2.6
+          version: 4.2.7
           push: "true"
           cosign: "false"
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
@@ -47,7 +49,7 @@ jobs:
 
   lint:
     name: Validate add-on metadata
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: frenck/action-addon-linter@v2
