@@ -14,12 +14,16 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.arch }}
+    name: Build ${{ matrix.image_arch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        arch: [amd64, aarch64]
+        include:
+          - build_arch: amd64
+            image_arch: amd64
+          - build_arch: arm64
+            image_arch: aarch64
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -27,14 +31,14 @@ jobs:
       - name: Build and publish add-on image
         uses: home-assistant/builder/actions/build-image@2026.06.0
         with:
-          arch: ${{ matrix.arch }}
+          arch: ${{ matrix.build_arch }}
           context: ./tachyon
           file: ./tachyon/Dockerfile
-          image: ghcr.io/braindelook/tachyon-ha-${{ matrix.arch }}
+          image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.5
+            4.2.6
             latest
-          version: 4.2.5
+          version: 4.2.6
           push: "true"
           cosign: "false"
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
