@@ -11,7 +11,12 @@ if [ ! -L /var/lib/tachyon ]; then
   mkdir -p "$DATA_DIR"
   if [ -d /var/lib/tachyon ] && [ "$(find /var/lib/tachyon -mindepth 1 -print -quit 2>/dev/null)" ]; then
     cp -a /var/lib/tachyon/. "$DATA_DIR"/
-    echo "[WARN] /var/lib/tachyon is not empty; data was copied to $DATA_DIR, but the original directory was left untouched"
+    if mv /var/lib/tachyon /var/lib/tachyon.legacy 2>/dev/null; then
+      ln -s "$DATA_DIR" /var/lib/tachyon
+      echo "[INFO] Moved legacy Tachyon data to /var/lib/tachyon.legacy and switched to $DATA_DIR"
+    else
+      echo "[WARN] /var/lib/tachyon is busy; data was copied to $DATA_DIR, but the original directory was left untouched"
+    fi
   elif [ -d /var/lib/tachyon ] && rmdir /var/lib/tachyon 2>/dev/null; then
     ln -s "$DATA_DIR" /var/lib/tachyon
   elif [ ! -e /var/lib/tachyon ]; then
