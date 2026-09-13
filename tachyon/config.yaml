@@ -1,5 +1,5 @@
 name: Tachyon
-version: "4.2.9"
+version: "4.2.10"
 slug: tachyon
 description: Modern self-hosted webmail client for Home Assistant
 url: https://github.com/kimusan/Tachyon
@@ -9,7 +9,6 @@ init: false
 arch:
   - amd64
   - aarch64
-ingress: false
 panel_icon: mdi:email-fast
 panel_title: Tachyon
 webui: "[PROTO:http]://[HOST]:[PORT:8888]"

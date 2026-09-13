@@ -38,9 +38,9 @@ jobs:
           file: ./tachyon/Dockerfile
           image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.9
+            4.2.10
             latest
-          version: 4.2.9
+          version: 4.2.10
           push: "true"
           cosign: "false"
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
