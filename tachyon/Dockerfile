@@ -26,4 +26,5 @@ LABEL \
   org.opencontainers.image.created="${BUILD_DATE}"
 
 WORKDIR /tachyon
+EXPOSE 8888
 ENTRYPOINT ["/usr/local/bin/ha-tachyon-entrypoint"]
