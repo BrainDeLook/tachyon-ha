@@ -45,4 +45,44 @@ export UPLOAD_MAX_SIZE="$(json_value upload_max_size 25M)"
 export MEMORY_LIMIT="$(json_value memory_limit 128M)"
 export SECURE_COOKIES="$(json_value secure_cookies true)"
 
+# Tachyon inherits SnappyMail's per-domain JSON format.  Seed Gmail's
+# official IMAPS/SMTPS endpoints once, without overwriting user changes.
+if [ "$(json_value preconfigure_gmail true)" = "true" ]; then
+  GMAIL_DOMAIN_DIR=/var/lib/tachyon/_data_/_default_/domains
+  GMAIL_DOMAIN_FILE="$GMAIL_DOMAIN_DIR/gmail.com.json"
+  if [ ! -e "$GMAIL_DOMAIN_FILE" ]; then
+    mkdir -p "$GMAIL_DOMAIN_DIR"
+    cat > "$GMAIL_DOMAIN_FILE" <<'JSON'
+{
+    "IMAP": {
+        "host": "imap.gmail.com",
+        "port": 993,
+        "type": 2,
+        "timeout": 300,
+        "shortLogin": false,
+        "lowerLogin": true,
+        "sasl": ["PLAIN", "LOGIN", "XOAUTH2"],
+        "ssl": {"verify_peer": true, "verify_peer_name": true, "allow_self_signed": false, "SNI_enabled": true}
+    },
+    "SMTP": {
+        "host": "smtp.gmail.com",
+        "port": 465,
+        "type": 2,
+        "timeout": 60,
+        "shortLogin": false,
+        "lowerLogin": true,
+        "sasl": ["PLAIN", "LOGIN", "XOAUTH2"],
+        "ssl": {"verify_peer": true, "verify_peer_name": true, "allow_self_signed": false, "SNI_enabled": true},
+        "useAuth": true,
+        "setSender": true,
+        "usePhpMail": false
+    },
+    "Sieve": {"enabled": false},
+    "whiteList": ""
+}
+JSON
+    echo "[INFO] Seeded Gmail IMAP/SMTP defaults"
+  fi
+fi
+
 exec /entrypoint.sh
