@@ -1,6 +1,6 @@
 <?php
 
-define('APP_DATA_FOLDER_PATH', '/var/lib/tachyon/');
+define('APP_DATA_FOLDER_PATH', '/data/tachyon/');
 
 // Home Assistant serves Ingress under a session-specific URL prefix. Tachyon
 // normally derives its public path from SCRIPT_NAME, which is /index.php

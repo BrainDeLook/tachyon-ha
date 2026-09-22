@@ -38,9 +38,9 @@ jobs:
           file: ./tachyon/Dockerfile
           image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.23
+            4.2.24
             latest
-          version: 4.2.23
+          version: 4.2.24
           push: "true"
           cosign: "false"
           cache-gha: "false"
@@ -48,15 +48,16 @@ jobs:
           build-args: |
             BUILD_FROM=ghcr.io/kimusan/tachyon:latest
 
-      - name: Smoke test Ingress page
+      - name: Smoke test Ingress and persistent settings
         shell: bash
         run: |
           set -euo pipefail
-          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.23"
+          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.24"
           old_image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.21"
-          volume="$(docker volume create)"
-          trap 'docker logs tachyon-ingress-smoke 2>/dev/null || true; docker rm -f tachyon-ingress-smoke tachyon-ingress-smoke-old 2>/dev/null || true; docker volume rm "$volume"' EXIT
-          docker run -d --name tachyon-ingress-smoke-old -v "$volume:/var/lib/tachyon" -p 127.0.0.1:18889:8888 "$old_image"
+          legacy_volume="$(docker volume create)"
+          data_volume="$(docker volume create)"
+          trap 'docker logs tachyon-ingress-smoke 2>/dev/null || true; docker rm -f tachyon-ingress-smoke tachyon-ingress-smoke-old 2>/dev/null || true; docker volume rm "$legacy_volume" "$data_volume"' EXIT
+          docker run -d --name tachyon-ingress-smoke-old -v "$legacy_volume:/var/lib/tachyon" -p 127.0.0.1:18889:8888 "$old_image"
           old_ready=false
           for attempt in $(seq 1 30); do
             if curl --silent --fail --output "$RUNNER_TEMP/tachyon-old-page" \
@@ -72,8 +73,9 @@ jobs:
             -H 'X-Ingress-Path: /api/hassio_ingress/testtoken' \
             http://127.0.0.1:18889/
           grep -Fq '<!--cached-->' "$RUNNER_TEMP/tachyon-old-cached-page"
+          docker exec tachyon-ingress-smoke-old sh -c 'printf "\n; ha-legacy-setting=retained\n" >> /var/lib/tachyon/_data_/_default_/configs/application.ini'
           docker rm -f tachyon-ingress-smoke-old
-          docker run -d --name tachyon-ingress-smoke -v "$volume:/var/lib/tachyon" -p 127.0.0.1:18888:8888 "$image"
+          docker run -d --name tachyon-ingress-smoke -v "$legacy_volume:/var/lib/tachyon" -v "$data_volume:/data" -p 127.0.0.1:18888:8888 "$image"
           ready=false
           for attempt in $(seq 1 30); do
             if curl --silent --fail --dump-header "$RUNNER_TEMP/tachyon-headers" \
@@ -98,8 +100,10 @@ jobs:
             echo 'Ingress page still denies iframe embedding' >&2
             exit 1
           fi
+          docker exec tachyon-ingress-smoke grep -Fq '; ha-legacy-setting=retained' /data/tachyon/_data_/_default_/configs/application.ini
+          docker exec tachyon-ingress-smoke sh -c 'printf "\n; ha-new-setting=retained\n" >> /data/tachyon/_data_/_default_/configs/application.ini'
           docker exec tachyon-ingress-smoke php -r '
-            $path = "/var/lib/tachyon/_data_/_default_/domains/gmail.com.json";
+            $path = "/data/tachyon/_data_/_default_/domains/gmail.com.json";
             $domain = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
             foreach (["IMAP", "SMTP", "Sieve"] as $service) {
               $settings = $domain[$service] ?? [];
@@ -113,6 +117,19 @@ jobs:
               throw new RuntimeException("Gmail Sieve must remain disabled");
             }
           '
+          docker rm -f tachyon-ingress-smoke
+          docker run -d --name tachyon-ingress-smoke -v "$data_volume:/data" -p 127.0.0.1:18888:8888 "$image"
+          restarted=false
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail --output /dev/null http://127.0.0.1:18888/; then
+              restarted=true
+              break
+            fi
+            sleep 2
+          done
+          test "$restarted" = true
+          docker exec tachyon-ingress-smoke grep -Fq '; ha-legacy-setting=retained' /data/tachyon/_data_/_default_/configs/application.ini
+          docker exec tachyon-ingress-smoke grep -Fq '; ha-new-setting=retained' /data/tachyon/_data_/_default_/configs/application.ini
 
   lint:
     name: Validate add-on metadata

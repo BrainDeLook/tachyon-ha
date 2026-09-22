@@ -51,11 +51,28 @@ PHP;
     replaceOnce($templateFile, $bootNeedle, $bootReplacement);
 }
 
+// The upstream startup script also hard-codes the Docker volume path. Point
+// its permission, config, and admin-password handling at the HA data mount.
+replaceAll('/entrypoint.sh', '/var/lib/tachyon', '/data/tachyon', 6);
+
 function replaceOnce(string $file, string $needle, string $replacement): void
 {
     $source = file_get_contents($file);
     if ($source === false || substr_count($source, $needle) !== 1) {
         fwrite(STDERR, "Unexpected Tachyon source in {$file}\n");
+        exit(1);
+    }
+    if (file_put_contents($file, str_replace($needle, $replacement, $source)) === false) {
+        fwrite(STDERR, "Cannot patch {$file}\n");
+        exit(1);
+    }
+}
+
+function replaceAll(string $file, string $needle, string $replacement, int $expectedCount): void
+{
+    $source = file_get_contents($file);
+    if ($source === false || substr_count($source, $needle) !== $expectedCount) {
+        fwrite(STDERR, "Unexpected Tachyon startup script in {$file}\n");
         exit(1);
     }
     if (file_put_contents($file, str_replace($needle, $replacement, $source)) === false) {
