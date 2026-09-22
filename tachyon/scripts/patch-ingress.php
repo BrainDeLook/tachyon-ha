@@ -61,12 +61,14 @@ PHP;
 
     $templateFile = dirname($apiFile, 3) . '/templates/Index.html';
     $fetchScript = file_get_contents('/usr/local/share/ha-tachyon-ingress-fetch.js');
-    if ($fetchScript === false) {
-        fwrite(STDERR, "Ingress fetch script not found\n");
+    $kioskScript = file_get_contents('/usr/local/share/ha-tachyon-kiosk.js');
+    if ($fetchScript === false || $kioskScript === false) {
+        fwrite(STDERR, "Ingress browser script not found\n");
         exit(1);
     }
     $bootNeedle = '<script nonce="" type="text/javascript">{{BaseAppBootScript}}{{BaseLanguage}}</script>';
-    $bootReplacement = '<script nonce="" type="text/javascript">' . "\n" . $fetchScript . "\n</script>\n\t" . $bootNeedle;
+    $bootReplacement = '<script nonce="" type="text/javascript">' . "\n" . $fetchScript . "\n</script>\n\t"
+        . '<script nonce="" type="text/javascript">' . "\n" . $kioskScript . "\n</script>\n\t" . $bootNeedle;
     replaceOnce($templateFile, $bootNeedle, $bootReplacement);
 }
 
