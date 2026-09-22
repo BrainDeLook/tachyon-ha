@@ -38,9 +38,9 @@ jobs:
           file: ./tachyon/Dockerfile
           image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.20
+            4.2.21
             latest
-          version: 4.2.20
+          version: 4.2.21
           push: "true"
           cosign: "false"
           cache-gha: "false"
@@ -52,9 +52,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.20"
-          docker run -d --name tachyon-ingress-smoke -p 127.0.0.1:18888:8888 "$image"
-          trap 'docker logs tachyon-ingress-smoke; docker rm -f tachyon-ingress-smoke' EXIT
+          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.21"
+          old_image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.20"
+          volume="$(docker volume create)"
+          trap 'docker logs tachyon-ingress-smoke 2>/dev/null || true; docker rm -f tachyon-ingress-smoke tachyon-ingress-smoke-old 2>/dev/null || true; docker volume rm "$volume"' EXIT
+          docker run -d --name tachyon-ingress-smoke-old -v "$volume:/var/lib/tachyon" -p 127.0.0.1:18889:8888 "$old_image"
+          old_ready=false
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail --output "$RUNNER_TEMP/tachyon-old-page" \
+              -H 'X-Ingress-Path: /api/hassio_ingress/testtoken' \
+              http://127.0.0.1:18889/; then
+              old_ready=true
+              break
+            fi
+            sleep 2
+          done
+          test "$old_ready" = true
+          curl --silent --fail --output "$RUNNER_TEMP/tachyon-old-cached-page" \
+            -H 'X-Ingress-Path: /api/hassio_ingress/testtoken' \
+            http://127.0.0.1:18889/
+          grep -Fq '<!--cached-->' "$RUNNER_TEMP/tachyon-old-cached-page"
+          docker rm -f tachyon-ingress-smoke-old
+          docker run -d --name tachyon-ingress-smoke -v "$volume:/var/lib/tachyon" -p 127.0.0.1:18888:8888 "$image"
           ready=false
           for attempt in $(seq 1 30); do
             if curl --silent --fail --dump-header "$RUNNER_TEMP/tachyon-headers" \
@@ -67,6 +86,10 @@ jobs:
             sleep 2
           done
           test "$ready" = true
+          if grep -Fq '<!--cached-->' "$RUNNER_TEMP/tachyon-page"; then
+            echo 'Old cached index survived add-on version change' >&2
+            exit 1
+          fi
           grep -Fq '/api/hassio_ingress/testtoken/tachyon/v/' "$RUNNER_TEMP/tachyon-page"
           grep -Fq 'Home Assistant Ingress reserializes query parameters' "$RUNNER_TEMP/tachyon-page"
           TACHYON_RENDERED_PAGE="$RUNNER_TEMP/tachyon-page" node --test tachyon/tests/ingress-fetch.test.cjs

@@ -23,7 +23,9 @@ PHP;
 
     $serviceFile = dirname($apiFile) . '/Service.php';
     $cacheNeedle = "Utils::jsonEncode(array(\n\t\t\t\t\t\$sLanguage,";
-    $cacheReplacement = "Utils::jsonEncode(array(\n\t\t\t\t\tUtils::WebPath(),\n\t\t\t\t\t\$sLanguage,";
+    // The rendered index is cached on disk across add-on upgrades. Include
+    // the image version so a previously cached page cannot hide a new shim.
+    $cacheReplacement = "Utils::jsonEncode(array(\n\t\t\t\t\tUtils::WebPath(),\n\t\t\t\t\tgetenv('BUILD_VERSION'),\n\t\t\t\t\t\$sLanguage,";
     replaceOnce($serviceFile, $cacheNeedle, $cacheReplacement);
 
     $templateFile = dirname($apiFile, 3) . '/templates/Index.html';
