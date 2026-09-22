@@ -38,9 +38,9 @@ jobs:
           file: ./tachyon/Dockerfile
           image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.17
+            4.2.18
             latest
-          version: 4.2.17
+          version: 4.2.18
           push: "true"
           cosign: "false"
           cache-gha: "false"
@@ -52,7 +52,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.17"
+          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.18"
           docker run -d --name tachyon-ingress-smoke -p 127.0.0.1:18888:8888 "$image"
           trap 'docker logs tachyon-ingress-smoke; docker rm -f tachyon-ingress-smoke' EXIT
           ready=false
@@ -73,6 +73,21 @@ jobs:
             echo 'Ingress page still denies iframe embedding' >&2
             exit 1
           fi
+          docker exec tachyon-ingress-smoke php -r '
+            $path = "/var/lib/tachyon/_data_/_default_/domains/gmail.com.json";
+            $domain = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+            foreach (["IMAP", "SMTP", "Sieve"] as $service) {
+              $settings = $domain[$service] ?? [];
+              if (!is_string($settings["host"] ?? null)
+                  || !is_int($settings["port"] ?? null)
+                  || !is_int($settings["type"] ?? null)) {
+                throw new RuntimeException("Incomplete {$service} connection settings");
+              }
+            }
+            if ($domain["Sieve"]["enabled"] !== false) {
+              throw new RuntimeException("Gmail Sieve must remain disabled");
+            }
+          '
 
   lint:
     name: Validate add-on metadata

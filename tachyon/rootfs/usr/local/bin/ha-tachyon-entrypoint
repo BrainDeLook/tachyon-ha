@@ -88,11 +88,19 @@ if [ "$(json_value preconfigure_gmail true)" = "true" ]; then
         "setSender": true,
         "usePhpMail": false
     },
-    "Sieve": {"enabled": false},
+    "Sieve": {"host": "localhost", "port": 4190, "type": 0, "enabled": false},
     "whiteList": ""
 }
 JSON
     echo "[INFO] Seeded Gmail IMAP/SMTP defaults"
+  fi
+
+  # 4.2.17 seeded an incomplete disabled Sieve section. Tachyon parses it
+  # even when disabled, so repair only that exact generated fragment while
+  # preserving any other settings the administrator may have changed.
+  if grep -Fq '"Sieve": {"enabled": false}' "$GMAIL_DOMAIN_FILE"; then
+    sed -i 's/"Sieve": {"enabled": false}/"Sieve": {"host": "localhost", "port": 4190, "type": 0, "enabled": false}/' "$GMAIL_DOMAIN_FILE"
+    echo "[INFO] Repaired incomplete Gmail Sieve defaults"
   fi
 
   # Tachyon copies its bundled disabled list during first-run setup. That
