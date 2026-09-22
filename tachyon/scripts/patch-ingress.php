@@ -25,6 +25,16 @@ PHP;
     $cacheNeedle = "Utils::jsonEncode(array(\n\t\t\t\t\t\$sLanguage,";
     $cacheReplacement = "Utils::jsonEncode(array(\n\t\t\t\t\tUtils::WebPath(),\n\t\t\t\t\t\$sLanguage,";
     replaceOnce($serviceFile, $cacheNeedle, $cacheReplacement);
+
+    $templateFile = dirname($apiFile, 3) . '/templates/Index.html';
+    $fetchScript = file_get_contents('/usr/local/share/ha-tachyon-ingress-fetch.js');
+    if ($fetchScript === false) {
+        fwrite(STDERR, "Ingress fetch script not found\n");
+        exit(1);
+    }
+    $bootNeedle = '<script nonce="" type="text/javascript">{{BaseAppBootScript}}{{BaseLanguage}}</script>';
+    $bootReplacement = '<script nonce="" type="text/javascript">' . "\n" . $fetchScript . "\n</script>\n\t" . $bootNeedle;
+    replaceOnce($templateFile, $bootNeedle, $bootReplacement);
 }
 
 function replaceOnce(string $file, string $needle, string $replacement): void
