@@ -10,7 +10,11 @@ ARG BUILD_REF
 ARG BUILD_REPOSITORY
 
 COPY rootfs/ /
-RUN chmod 0755 /usr/local/bin/ha-tachyon-entrypoint
+COPY scripts/patch-ingress.php /usr/local/bin/ha-tachyon-patch-ingress.php
+RUN php /usr/local/bin/ha-tachyon-patch-ingress.php \
+  && chown www-data:www-data /tachyon/include.php \
+  && chmod 0440 /tachyon/include.php \
+  && chmod 0755 /usr/local/bin/ha-tachyon-entrypoint
 
 ENV BUILD_VERSION="${BUILD_VERSION}"
 LABEL \
