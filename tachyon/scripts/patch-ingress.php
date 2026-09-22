@@ -27,6 +27,25 @@ PHP;
     // the image version so a previously cached page cannot hide a new shim.
     $cacheReplacement = "Utils::jsonEncode(array(\n\t\t\t\t\tUtils::WebPath(),\n\t\t\t\t\tgetenv('BUILD_VERSION'),\n\t\t\t\t\t\$sLanguage,";
     replaceOnce($serviceFile, $cacheNeedle, $cacheReplacement);
+    $proxyQueryNeedle = <<<'PHP'
+		$sQuery = \trim(\trim($sQuery), ' /');
+PHP;
+    $proxyQueryFix = <<<'PHP'
+		// Home Assistant Ingress reserializes bare query paths as key=value.
+		// Recover only Tachyon's external-image route from the parsed key.
+		if (\defined('HA_TACHYON_INGRESS')) {
+			foreach (\array_keys($_GET) as $sKey) {
+				if (\preg_match('#^/?ProxyExternal/([A-Za-z0-9_-]+)$#D', $sKey, $aProxyMatch)) {
+					$sQuery = 'ProxyExternal/'.$aProxyMatch[1];
+					break;
+				}
+			}
+			if (\preg_match('#^ProxyExternal/([A-Za-z0-9_-]+)=?$#D', $sQuery, $aProxyMatch)) {
+				$sQuery = 'ProxyExternal/'.$aProxyMatch[1];
+			}
+		}
+PHP;
+    replaceOnce($serviceFile, $proxyQueryNeedle, $proxyQueryNeedle . "\n" . $proxyQueryFix);
     // The persistent data volume can still supply an old rendered page after
     // an image upgrade. Always render the ingress page from this image.
     replaceOnce(
