@@ -73,7 +73,7 @@ jobs:
             -H 'X-Ingress-Path: /api/hassio_ingress/testtoken' \
             http://127.0.0.1:18889/
           grep -Fq '<!--cached-->' "$RUNNER_TEMP/tachyon-old-cached-page"
-          docker exec tachyon-ingress-smoke-old sh -c 'printf "\n; ha-legacy-setting=retained\n" >> /var/lib/tachyon/_data_/_default_/configs/application.ini'
+          docker exec tachyon-ingress-smoke-old sh -c 'printf retained > /var/lib/tachyon/ha-legacy-persistence-test'
           docker rm -f tachyon-ingress-smoke-old
           docker run -d --name tachyon-ingress-smoke -v "$legacy_volume:/var/lib/tachyon" -v "$data_volume:/data" -p 127.0.0.1:18888:8888 "$image"
           ready=false
@@ -100,9 +100,8 @@ jobs:
             echo 'Ingress page still denies iframe embedding' >&2
             exit 1
           fi
-          set -x
-          docker exec tachyon-ingress-smoke grep -Fq '; ha-legacy-setting=retained' /data/tachyon/_data_/_default_/configs/application.ini
-          docker exec tachyon-ingress-smoke sh -c 'printf "\n; ha-new-setting=retained\n" >> /data/tachyon/_data_/_default_/configs/application.ini'
+          docker exec tachyon-ingress-smoke grep -Fqx retained /data/tachyon/ha-legacy-persistence-test
+          docker exec tachyon-ingress-smoke sh -c 'printf retained > /data/tachyon/ha-new-persistence-test'
           docker exec tachyon-ingress-smoke php -r '
             $path = "/data/tachyon/_data_/_default_/domains/gmail.com.json";
             $domain = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
@@ -129,8 +128,8 @@ jobs:
             sleep 2
           done
           test "$restarted" = true
-          docker exec tachyon-ingress-smoke grep -Fq '; ha-legacy-setting=retained' /data/tachyon/_data_/_default_/configs/application.ini
-          docker exec tachyon-ingress-smoke grep -Fq '; ha-new-setting=retained' /data/tachyon/_data_/_default_/configs/application.ini
+          docker exec tachyon-ingress-smoke grep -Fqx retained /data/tachyon/ha-legacy-persistence-test
+          docker exec tachyon-ingress-smoke grep -Fqx retained /data/tachyon/ha-new-persistence-test
 
   lint:
     name: Validate add-on metadata
