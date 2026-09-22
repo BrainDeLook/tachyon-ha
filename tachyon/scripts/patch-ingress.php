@@ -58,6 +58,11 @@ PHP;
         'if ($sCacheFileName) {',
         "if (!\\defined('HA_TACHYON_INGRESS') && \$sCacheFileName) {"
     );
+    $renderNeedle = '$sResult = \strtr($sResult, $aTemplateParameters);';
+    $renderAddition = <<<'PHP'
+				$aTemplateParameters['{{HAIngressKiosk}}'] = \defined('HA_TACHYON_INGRESS') ? 'true' : 'false';
+PHP;
+    replaceOnce($serviceFile, $renderNeedle, $renderAddition . "\n" . $renderNeedle);
 
     $templateFile = dirname($apiFile, 3) . '/templates/Index.html';
     $fetchScript = file_get_contents('/usr/local/share/ha-tachyon-ingress-fetch.js');

@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const source = readFileSync(join(__dirname, '../rootfs/usr/local/share/ha-tachyon-kiosk.js'), 'utf8');
 const origin = 'http://ha.test';
 
-function setup(pathname, framed = true, script = source) {
+function setup(pathname, framed = true, script = source, ingressApp = true) {
   const messages = [];
   const listeners = new Map();
   const nodes = [];
@@ -27,7 +27,9 @@ function setup(pathname, framed = true, script = source) {
       };
     }
   };
-  vm.runInNewContext(script, {window, document, location: {pathname, origin}});
+  vm.runInNewContext(script.replaceAll('{{HAIngressKiosk}}', String(ingressApp)), {
+    window, document, location: {pathname, origin}
+  });
   return {messages, listeners, nodes, parent};
 }
 
@@ -59,12 +61,16 @@ test('Ingress iframe requests kiosk mode and exposes a separate HA sidebar butto
 test('standalone Tachyon and unrelated frames remain untouched', () => {
   for (const app of [
     setup('/api/hassio_ingress/testtoken/', false),
-    setup('/plain-webmail/', true),
-    setup('/app/6d58d924_tachyon', true)
+    setup('/plain-webmail/', true, source, false)
   ]) {
     assert.equal(app.messages.length, 0);
     assert.equal(app.nodes.length, 0);
   }
+});
+
+test('Ingress app still enables kiosk when the browser shows an /app/ route', () => {
+  const app = setup('/app/6d58d924_tachyon');
+  assert.equal(app.messages[0].message.kioskMode, true);
 });
 
 test('kiosk script survives Tachyon HTML whitespace compaction', () => {

@@ -2,8 +2,8 @@
    Assistant. Only request kiosk mode inside a Home Assistant Ingress iframe.
    Keep comments block-style: Tachyon compacts newlines in its HTML template. */
 (() => {
-  const ingressPath = /^\/api\/hassio_ingress\/[A-Za-z0-9_-]+\/?$/;
-  if (window.parent === window || !ingressPath.test(location.pathname)) {
+  const ingressApp = {{HAIngressKiosk}};
+  if (!ingressApp || window.parent === window) {
     return;
   }
 
