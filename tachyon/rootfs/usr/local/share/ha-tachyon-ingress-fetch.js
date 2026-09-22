@@ -1,7 +1,8 @@
-// Home Assistant Ingress reserializes query parameters while proxying them.
-// Tachyon's cached Message/MessageList GET URLs encode the action in repeated
-// q[] parameters, which can disappear before Tachyon reconstructs the route.
-// Send only these two JSON actions as POST, preserving the existing CSRF header.
+/* Home Assistant Ingress reserializes query parameters while proxying them.
+   Tachyon's cached Message/MessageList GET URLs encode the action in repeated
+   q[] parameters, which can disappear before Tachyon reconstructs the route.
+   Send only these two JSON actions as POST, preserving the existing CSRF header.
+   Keep this comment block-style: Tachyon removes newlines from Index.html. */
 (() => {
   if (!/^\/api\/hassio_ingress\/[A-Za-z0-9_-]+\/?$/.test(location.pathname)) {
     return;

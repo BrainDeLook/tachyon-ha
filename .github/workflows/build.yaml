@@ -38,9 +38,9 @@ jobs:
           file: ./tachyon/Dockerfile
           image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.19
+            4.2.20
             latest
-          version: 4.2.19
+          version: 4.2.20
           push: "true"
           cosign: "false"
           cache-gha: "false"
@@ -52,7 +52,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.19"
+          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.20"
           docker run -d --name tachyon-ingress-smoke -p 127.0.0.1:18888:8888 "$image"
           trap 'docker logs tachyon-ingress-smoke; docker rm -f tachyon-ingress-smoke' EXIT
           ready=false
@@ -69,6 +69,7 @@ jobs:
           test "$ready" = true
           grep -Fq '/api/hassio_ingress/testtoken/tachyon/v/' "$RUNNER_TEMP/tachyon-page"
           grep -Fq 'Home Assistant Ingress reserializes query parameters' "$RUNNER_TEMP/tachyon-page"
+          TACHYON_RENDERED_PAGE="$RUNNER_TEMP/tachyon-page" node --test tachyon/tests/ingress-fetch.test.cjs
           grep -Fq "frame-ancestors 'self'" "$RUNNER_TEMP/tachyon-headers"
           if grep -qi '^x-frame-options:' "$RUNNER_TEMP/tachyon-headers"; then
             echo 'Ingress page still denies iframe embedding' >&2
