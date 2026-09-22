@@ -38,11 +38,12 @@ jobs:
           file: ./tachyon/Dockerfile
           image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.15
+            4.2.16
             latest
-          version: 4.2.15
+          version: 4.2.16
           push: "true"
           cosign: "false"
+          cache-gha: "false"
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           build-args: |
             BUILD_FROM=ghcr.io/kimusan/tachyon:latest
