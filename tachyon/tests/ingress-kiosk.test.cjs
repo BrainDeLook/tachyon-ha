@@ -7,16 +7,31 @@ const vm = require('node:vm');
 const source = readFileSync(join(__dirname, '../rootfs/usr/local/share/ha-tachyon-kiosk.js'), 'utf8');
 const origin = 'http://ha.test';
 
-function setup(pathname, framed = true, script = source, ingressApp = true) {
+function setup(pathname, framed = true, script = source, ingressApp = true, folderReady = true) {
   const messages = [];
   const listeners = new Map();
   const nodes = [];
+  const footer = {};
+  const folderPanel = {
+    querySelector: (selector) => selector === '.b-footer' ? footer : null,
+    insertBefore: (node, before) => {
+      assert.equal(before, footer);
+      nodes.push(node);
+    }
+  };
+  let observer;
+  const MutationObserver = class {
+    constructor(callback) { this.callback = callback; observer = this; }
+    observe() { this.observing = true; }
+    disconnect() { this.observing = false; }
+  };
   const parent = {postMessage: (message, targetOrigin) => messages.push({message, targetOrigin})};
   const window = {addEventListener: (name, handler) => listeners.set(name, handler)};
   window.parent = framed ? parent : window;
   const document = {
     readyState: 'complete',
-    body: {appendChild: (node) => nodes.push(node)},
+    body: {},
+    querySelector: (selector) => selector === '#V-MailFolderList .b-folders' && folderReady ? folderPanel : null,
     createElement: () => {
       const handlers = new Map();
       return {
@@ -28,9 +43,9 @@ function setup(pathname, framed = true, script = source, ingressApp = true) {
     }
   };
   vm.runInNewContext(script.replaceAll('{{HAIngressKiosk}}', String(ingressApp)), {
-    window, document, location: {pathname, origin}
+    window, document, MutationObserver, location: {pathname, origin}
   });
-  return {messages, listeners, nodes, parent};
+  return {messages, listeners, nodes, parent, setFolderReady: () => { folderReady = true; observer?.callback(); }, get observer() { return observer; }};
 }
 
 test('Ingress iframe requests kiosk mode and exposes a separate HA sidebar button', () => {
@@ -50,8 +65,9 @@ test('Ingress iframe requests kiosk mode and exposes a separate HA sidebar butto
   assert.equal(app.nodes.length, 1);
   assert.equal(app.nodes[0].id, 'ha-tachyon-sidebar-button');
   assert.equal(app.nodes[0].type, 'button');
-  assert.equal(app.nodes[0].style.left, '8px');
-  assert.equal(app.nodes[0].style.right, undefined);
+  assert.equal(app.nodes[0].style.position, undefined);
+  assert.equal(app.nodes[0].style.width, 'calc(100% - 16px)');
+  assert.equal(app.nodes[0].style.flexShrink, '0');
   assert.equal(app.nodes[0].style.background, '#2e2e2e');
   assert.match(app.nodes[0].innerHTML, /<svg[^>]+aria-hidden="true"/);
   assert.match(app.nodes[0].innerHTML, /<span>Home Assistant<\/span>/);
@@ -65,6 +81,16 @@ test('Ingress iframe requests kiosk mode and exposes a separate HA sidebar butto
 
   app.listeners.get('pagehide')();
   assert.equal(app.messages[2].message.type, 'home-assistant/unsubscribe-properties');
+});
+
+test('button waits for the folder sidebar and joins its layout above the native footer', () => {
+  const app = setup('/api/hassio_ingress/testtoken/', true, source, true, false);
+  app.listeners.get('message')({source: app.parent, origin, data: {type: 'home-assistant/properties'}});
+  assert.equal(app.nodes.length, 0);
+  assert.equal(app.observer.observing, true);
+  app.setFolderReady();
+  assert.equal(app.nodes.length, 1);
+  assert.equal(app.observer.observing, false);
 });
 
 test('standalone Tachyon and unrelated frames remain untouched', () => {

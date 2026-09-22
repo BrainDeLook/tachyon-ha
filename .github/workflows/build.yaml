@@ -38,9 +38,9 @@ jobs:
           file: ./tachyon/Dockerfile
           image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.28
+            4.2.29
             latest
-          version: 4.2.28
+          version: 4.2.29
           push: "true"
           cosign: "false"
           cache-gha: "false"
@@ -52,7 +52,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.28"
+          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.29"
           old_image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.21"
           legacy_volume="$(docker volume create)"
           data_volume="$(docker volume create)"
