@@ -100,6 +100,7 @@ jobs:
             echo 'Ingress page still denies iframe embedding' >&2
             exit 1
           fi
+          set -x
           docker exec tachyon-ingress-smoke grep -Fq '; ha-legacy-setting=retained' /data/tachyon/_data_/_default_/configs/application.ini
           docker exec tachyon-ingress-smoke sh -c 'printf "\n; ha-new-setting=retained\n" >> /data/tachyon/_data_/_default_/configs/application.ini'
           docker exec tachyon-ingress-smoke php -r '
