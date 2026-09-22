@@ -1,6 +1,6 @@
 <?php
 
-// Patch the two small upstream assumptions that prevent Home Assistant Ingress.
+// Patch upstream assumptions that prevent Home Assistant Ingress.
 // Fail the image build if Tachyon changes those lines instead of shipping an
 // image whose UI silently breaks after an upstream update.
 $versions = glob('/tachyon/tachyon/v/*/app/libraries/Tachyon/Api.php');
@@ -27,6 +27,18 @@ PHP;
     // the image version so a previously cached page cannot hide a new shim.
     $cacheReplacement = "Utils::jsonEncode(array(\n\t\t\t\t\tUtils::WebPath(),\n\t\t\t\t\tgetenv('BUILD_VERSION'),\n\t\t\t\t\t\$sLanguage,";
     replaceOnce($serviceFile, $cacheNeedle, $cacheReplacement);
+    // The persistent data volume can still supply an old rendered page after
+    // an image upgrade. Always render the ingress page from this image.
+    replaceOnce(
+        $serviceFile,
+        "if (\$oConfig->Get('cache', 'system_data', true)) {",
+        "if (!\\defined('HA_TACHYON_INGRESS') && \$oConfig->Get('cache', 'system_data', true)) {"
+    );
+    replaceOnce(
+        $serviceFile,
+        'if ($sCacheFileName) {',
+        "if (!\\defined('HA_TACHYON_INGRESS') && \$sCacheFileName) {"
+    );
 
     $templateFile = dirname($apiFile, 3) . '/templates/Index.html';
     $fetchScript = file_get_contents('/usr/local/share/ha-tachyon-ingress-fetch.js');
