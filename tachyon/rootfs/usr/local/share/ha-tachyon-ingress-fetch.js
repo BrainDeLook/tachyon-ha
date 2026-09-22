@@ -4,10 +4,7 @@
    Send only these two JSON actions as POST, preserving the existing CSRF header.
    Keep this comment block-style: Tachyon removes newlines from Index.html. */
 (() => {
-  if (!/^\/api\/hassio_ingress\/[A-Za-z0-9_-]+\/?$/.test(location.pathname)) {
-    return;
-  }
-
+  const ingressPath = /^\/api\/hassio_ingress\/[A-Za-z0-9_-]+\/?$/;
   const originalFetch = window.fetch.bind(window);
   window.fetch = (resource, init) => {
     if (typeof resource !== 'string' ||
@@ -17,7 +14,7 @@
 
     const url = new URL(resource, location.href);
     if (url.origin !== location.origin ||
-        url.pathname !== location.pathname ||
+        !ingressPath.test(url.pathname) ||
         !url.search.startsWith('?/Json/')) {
       return originalFetch(resource, init);
     }
@@ -33,7 +30,7 @@
 
     const headers = new Headers(init?.headers);
     headers.set('Content-Type', 'application/json');
-    return originalFetch(location.pathname + '?/Json/', {
+    return originalFetch(url.pathname + '?/Json/', {
       ...init,
       method: 'POST',
       headers,

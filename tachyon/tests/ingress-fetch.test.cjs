@@ -42,7 +42,7 @@ if (process.env.TACHYON_RENDERED_PAGE) {
     const bodyEnd = html.indexOf('</script>', bodyStart);
     assert.ok(start >= 0 && bodyStart > start && bodyEnd > bodyStart);
     const renderedScript = html.slice(bodyStart, bodyEnd);
-    const {window, calls, originalFetch} = setup('/api/hassio_ingress/testtoken/', renderedScript);
+    const {window, calls, originalFetch} = setup('/app/6d58d924_tachyon', renderedScript);
     assert.notEqual(window.fetch, originalFetch);
     await window.fetch(`${base}?/Json/&q[]=/0/Message/&q[]=/WyJJTkJPWCJd`);
     assert.equal(calls[0].init.method, 'POST');
@@ -65,6 +65,13 @@ for (const action of ['Message', 'MessageList']) {
   });
 }
 
+test('Home Assistant app page rewrites requests to its separate Ingress path', async () => {
+  const {window, calls} = setup('/app/6d58d924_tachyon');
+  await window.fetch(`${base}?/Json/&q[]=/0/Message/&q[]=/WyJJTkJPWCJd`);
+  assert.equal(calls[0].resource, '/api/hassio_ingress/testtoken/?/Json/');
+  assert.equal(calls[0].init.method, 'POST');
+});
+
 test('other requests and non-Ingress pages keep their original fetch', async () => {
   const {window, calls} = setup();
   await window.fetch(`${base}?/Raw/&q[]=/0/Download/`);
@@ -73,5 +80,7 @@ test('other requests and non-Ingress pages keep their original fetch', async () 
   assert.equal(calls[1].init.method, 'POST');
 
   const outside = setup('/plain-webmail/');
-  assert.equal(outside.window.fetch, outside.originalFetch);
+  await outside.window.fetch('http://ha.test/plain-webmail/?/Json/&q[]=/0/Message/&q[]=/key');
+  assert.equal(outside.calls[0].resource, 'http://ha.test/plain-webmail/?/Json/&q[]=/0/Message/&q[]=/key');
+  assert.notEqual(outside.window.fetch, outside.originalFetch);
 });
