@@ -50,6 +50,15 @@ test('Ingress iframe requests kiosk mode and exposes a separate HA sidebar butto
   assert.equal(app.nodes.length, 1);
   assert.equal(app.nodes[0].id, 'ha-tachyon-sidebar-button');
   assert.equal(app.nodes[0].type, 'button');
+  assert.equal(app.nodes[0].style.left, '8px');
+  assert.equal(app.nodes[0].style.right, undefined);
+  assert.equal(app.nodes[0].style.background, '#2e2e2e');
+  assert.match(app.nodes[0].innerHTML, /<svg[^>]+aria-hidden="true"/);
+  assert.match(app.nodes[0].innerHTML, /<span>Home Assistant<\/span>/);
+  app.nodes[0].handlers.get('mouseenter')();
+  assert.equal(app.nodes[0].style.background, '#3a3a3a');
+  app.nodes[0].handlers.get('mouseleave')();
+  assert.equal(app.nodes[0].style.background, '#2e2e2e');
   app.nodes[0].handlers.get('click')();
   assert.equal(app.messages[1].message.type, 'home-assistant/toggle-menu');
   assert.equal(app.messages[1].targetOrigin, origin);
