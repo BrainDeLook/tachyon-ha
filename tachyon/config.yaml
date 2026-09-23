@@ -1,5 +1,5 @@
 name: Tachyon
-version: "4.2.29"
+version: "4.2.30"
 slug: tachyon
 description: Modern self-hosted webmail client for Home Assistant
 url: https://github.com/kimusan/Tachyon
@@ -17,6 +17,7 @@ ingress_port: 8888
 ingress_entry: /
 backup_exclude:
   - "**/cache/"
+  - "**/ha-message-cache/"
   - "**/log/"
 options:
   debug: false
@@ -24,9 +25,15 @@ options:
   memory_limit: 128M
   secure_cookies: false
   preconfigure_gmail: true
+  gmail_cache_enabled: false
+  gmail_cache_email: ""
+  gmail_cache_password: ""
 schema:
   debug: bool
   upload_max_size: str
   memory_limit: str
   secure_cookies: bool
   preconfigure_gmail: bool
+  gmail_cache_enabled: bool
+  gmail_cache_email: str
+  gmail_cache_password: password

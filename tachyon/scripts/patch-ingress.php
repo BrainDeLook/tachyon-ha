@@ -75,6 +75,43 @@ PHP;
     $bootReplacement = '<script nonce="" type="text/javascript">' . "\n" . $fetchScript . "\n</script>\n\t"
         . '<script nonce="" type="text/javascript">' . "\n" . $kioskScript . "\n</script>\n\t" . $bootNeedle;
     replaceOnce($templateFile, $bootNeedle, $bootReplacement);
+
+    // Serve prefetched recent INBOX messages from the persistent add-on cache.
+    // Other folders, uncached messages, and disabled caching keep upstream IMAP.
+    $messagesFile = dirname($apiFile) . '/Actions/Messages.php';
+    $messageNeedle = <<<'PHP'
+		$oAccount = $this->initMailClientConnection();
+
+		try
+		{
+			$oMessage = $this->MailClient()->Message($sFolder, $iUid, true, $this->Cacher($oAccount));
+PHP;
+    $messageReplacement = <<<'PHP'
+		if ('INBOX' === $sFolder && $iUid > 0) {
+			$aHaOptions = json_decode(@file_get_contents('/data/options.json') ?: '', true);
+			$oHaAccount = $this->getAccountFromToken(false);
+			$sHaEmail = $oHaAccount ? strtolower($oHaAccount->Email()) : '';
+			if (is_array($aHaOptions) && !empty($aHaOptions['gmail_cache_enabled'])
+				&& $sHaEmail && $sHaEmail === strtolower($aHaOptions['gmail_cache_email'] ?? '')) {
+				$sHaCache = '/data/tachyon/ha-message-cache/' . hash('sha256', $sHaEmail) . '/' . $iUid . '.json';
+				if (is_file($sHaCache)) {
+					$aHaCachedMessage = json_decode(@file_get_contents($sHaCache) ?: '', true);
+					if (is_array($aHaCachedMessage) && ($aHaCachedMessage['folder'] ?? null) === 'INBOX'
+						&& ($aHaCachedMessage['uid'] ?? null) === $iUid) {
+						header('X-HA-Mail-Cache: HIT');
+						return $this->DefaultResponse($aHaCachedMessage);
+					}
+				}
+			}
+		}
+
+		$oAccount = $this->initMailClientConnection();
+
+		try
+		{
+			$oMessage = $this->MailClient()->Message($sFolder, $iUid, true, $this->Cacher($oAccount));
+PHP;
+    replaceOnce($messagesFile, $messageNeedle, $messageReplacement);
 }
 
 // The upstream startup script also hard-codes the Docker volume path. Point

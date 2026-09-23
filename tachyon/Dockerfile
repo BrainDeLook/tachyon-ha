@@ -1,6 +1,8 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
+RUN apk add --no-cache python3
+
 ARG BUILD_VERSION
 ARG BUILD_ARCH
 ARG BUILD_DATE
@@ -11,7 +13,11 @@ ARG BUILD_REPOSITORY
 
 COPY rootfs/ /
 COPY scripts/patch-ingress.php /usr/local/bin/ha-tachyon-patch-ingress.php
+COPY scripts/cache-worker.py /usr/local/bin/ha-tachyon-cache-worker.py
+COPY scripts/supervisor-cache.conf /tmp/ha-tachyon-supervisor-cache.conf
 RUN php /usr/local/bin/ha-tachyon-patch-ingress.php \
+  && cat /tmp/ha-tachyon-supervisor-cache.conf >> /supervisor.conf \
+  && python3 -m py_compile /usr/local/bin/ha-tachyon-cache-worker.py \
   && chown www-data:www-data /tachyon/include.php \
   && chmod 0440 /tachyon/include.php \
   && chmod 0755 /usr/local/bin/ha-tachyon-entrypoint

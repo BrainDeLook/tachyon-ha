@@ -38,9 +38,9 @@ jobs:
           file: ./tachyon/Dockerfile
           image: ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}
           image-tags: |
-            4.2.29
+            4.2.30
             latest
-          version: 4.2.29
+          version: 4.2.30
           push: "true"
           cosign: "false"
           cache-gha: "false"
@@ -52,7 +52,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.29"
+          image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.30"
           old_image="ghcr.io/braindelook/tachyon-ha-${{ matrix.image_arch }}:4.2.21"
           legacy_volume="$(docker volume create)"
           data_volume="$(docker volume create)"
@@ -97,6 +97,8 @@ jobs:
           grep -Fq 'home-assistant/subscribe-properties' "$RUNNER_TEMP/tachyon-page"
           grep -Fq 'const ingressApp = true;' "$RUNNER_TEMP/tachyon-page"
           TACHYON_RENDERED_PAGE="$RUNNER_TEMP/tachyon-page" node --test tachyon/tests/*.test.cjs
+          docker exec tachyon-ingress-smoke sh -c 'php -l /tachyon/tachyon/v/*/app/libraries/Tachyon/Actions/Messages.php'
+          docker exec tachyon-ingress-smoke grep -Fq '[program:ha-cache]' /supervisor.conf
           grep -Fq "frame-ancestors 'self'" "$RUNNER_TEMP/tachyon-headers"
           if grep -qi '^x-frame-options:' "$RUNNER_TEMP/tachyon-headers"; then
             echo 'Ingress page still denies iframe embedding' >&2
@@ -143,3 +145,5 @@ jobs:
           path: ./tachyon
       - name: Test Ingress browser integration
         run: node --test tachyon/tests/*.test.cjs
+      - name: Test bounded Gmail cache
+        run: python3 tachyon/tests/cache-worker.test.py
