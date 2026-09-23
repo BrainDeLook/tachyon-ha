@@ -90,11 +90,16 @@ PHP;
 		if ('INBOX' === $sFolder && $iUid > 0) {
 			$aHaOptions = json_decode(@file_get_contents('/data/options.json') ?: '', true);
 			$oHaAccount = $this->getAccountFromToken(false);
-			$sHaEmail = $oHaAccount ? strtolower($oHaAccount->Email()) : '';
+			$sHaEmail = $oHaAccount ? strtolower(trim($oHaAccount->Email())) : '';
+			$sHaConfiguredEmail = is_array($aHaOptions)
+				? strtolower(trim((string) ($aHaOptions['gmail_cache_email'] ?? ''))) : '';
+			$sHaCacheStatus = 'MISS-ACCOUNT';
 			if (is_array($aHaOptions) && !empty($aHaOptions['gmail_cache_enabled'])
-				&& $sHaEmail && $sHaEmail === strtolower($aHaOptions['gmail_cache_email'] ?? '')) {
+				&& $sHaEmail && $sHaEmail === $sHaConfiguredEmail) {
+				$sHaCacheStatus = 'MISS-FILE';
 				$sHaCache = '/data/tachyon/ha-message-cache/' . hash('sha256', $sHaEmail) . '/' . $iUid . '.json';
 				if (is_file($sHaCache)) {
+					$sHaCacheStatus = 'MISS-DATA';
 					$aHaCachedMessage = json_decode(@file_get_contents($sHaCache) ?: '', true);
 					if (is_array($aHaCachedMessage) && ($aHaCachedMessage['folder'] ?? null) === 'INBOX'
 						&& ($aHaCachedMessage['uid'] ?? null) === $iUid) {
@@ -103,6 +108,7 @@ PHP;
 					}
 				}
 			}
+			header('X-HA-Mail-Cache: ' . $sHaCacheStatus);
 		}
 
 		$oAccount = $this->initMailClientConnection();
